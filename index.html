@@ -1,208 +1,312 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISAH Barco</title>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px; width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            overflow: hidden;
-            animation: fadeIn 0.7s ease-out;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        header {
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            padding: 25px;
-            text-align: center;
-        }
-        header h1 { font-size: 2.2em; }
-        header p { opacity: 0.9; font-size: 1em; }
-        .status {
-            padding: 15px 25px;
-            background: rgba(255,255,255,0.15);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-between; font-weight: bold;
-        }
-        .status.connected { color: #00ff88; }
-        .status.disconnected { color: #ff6b6b; }
-        .section { padding: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .section:last-child { border-bottom: none; }
-        h2 { color: #00ffcc; margin-bottom: 15px; font-size: 1.5em; }
-        .data-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px;
-        }
-        .data-item {
-            background: rgba(255,255,255,0.1);
-            padding: 18px; border-radius: 15px; text-align: center;
-            font-size: 1.4em; font-weight: bold;
-            transition: transform 0.2s;
-        }
-        .data-item:hover { transform: scale(1.05); }
-        .data-label { font-size: 0.75em; opacity: 0.8; margin-top: 5px; }
-        .input-group {
-            display: flex; gap: 10px; margin-bottom: 20px;
-        }
-        input[type="text"] {
-            flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 12px; background: rgba(255,255,255,0.1);
-            color: white; font-size: 1em;
-        }
-        input::placeholder { color: rgba(255,255,255,0.6); }
-        input:focus { border-color: #00ffcc; outline: none; }
-        button {
-            padding: 15px 22px; border: none; border-radius: 12px;
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            color: white; font-weight: bold; cursor: pointer;
-            transition: all 0.3s; font-size: 1em;
-        }
-        button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        .motor-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
-        }
-        .motor-btn { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
-        .motor-btn.stop { background: linear-gradient(135deg, #333, #555); }
-        .log { max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; font-size: 0.9em; }
-        @media (max-width: 600px) {
-            .motor-grid, .data-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SISAH Barco</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #0f2027, #203a43); 
+      color: #e0f7fa; 
+      min-height: 100vh; 
+      padding: 20px;
+    }
+    .container { 
+      max-width: 900px; 
+      margin: auto; 
+      background: rgba(255,255,255,0.08); 
+      border-radius: 20px; 
+      overflow: hidden; 
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4); 
+    }
+    header { 
+      background: linear-gradient(135deg, #0072ff, #00c6ff); 
+      padding: 30px; 
+      text-align: center; 
+      font-size: 2em; 
+      font-weight: bold; 
+      text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    .status { 
+      padding: 16px; 
+      text-align: center; 
+      font-weight: bold; 
+      font-size: 1.1em; 
+      transition: all 0.3s;
+    }
+    .connected { 
+      color: #00ff88; 
+      background: rgba(0,255,136,0.15); 
+    }
+    .disconnected { 
+      color: #ff6b6b; 
+      background: rgba(255,107,107,0.15); 
+    }
+    .section { 
+      padding: 25px; 
+      border-bottom: 1px solid rgba(255,255,255,0.1); 
+    }
+    h2 { 
+      color: #00ffcc; 
+      margin-bottom: 18px; 
+      font-size: 1.5em; 
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+      gap: 16px; 
+    }
+    .item { 
+      background: rgba(255,255,255,0.1); 
+      padding: 20px; 
+      border-radius: 15px; 
+      text-align: center; 
+      font-size: 1.1em; 
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    button { 
+      padding: 16px; 
+      margin: 6px 0; 
+      border: none; 
+      border-radius: 12px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      width: 100%; 
+      font-size: 1em; 
+      transition: all 0.2s; 
+    }
+    button:hover { 
+      transform: translateY(-3px); 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
+    }
+    .servo { 
+      background: #4facfe; 
+      color: white; 
+    }
+    .servo:hover { 
+      background: #3a8bc2; 
+    }
+    .motor { 
+      background: #ee5a24; 
+      color: white; 
+    }
+    .motor:hover { 
+      background: #d63e0f; 
+    }
+    .msg-btn { 
+      background: #00ff88; 
+      color: black; 
+      font-weight: bold;
+    }
+    .msg-btn:hover { 
+      background: #00cc66; 
+    }
+    .input-group { 
+      display: flex; 
+      gap: 12px; 
+      margin-top: 8px;
+    }
+    input { 
+      flex: 1; 
+      padding: 14px; 
+      border-radius: 10px; 
+      border: none; 
+      font-size: 1em; 
+      background: rgba(255,255,255,0.15); 
+      color: white;
+    }
+    input::placeholder { 
+      color: rgba(255,255,255,0.6); 
+    }
+    .log { 
+      max-height: 200px; 
+      overflow-y: auto; 
+      background: rgba(0,0,0,0.4); 
+      padding: 14px; 
+      border-radius: 12px; 
+      font-family: 'Courier New', monospace; 
+      font-size: 0.9em; 
+      line-height: 1.5;
+    }
+    .offline { 
+      opacity: 0.5; 
+      pointer-events: none; 
+    }
+    footer { 
+      text-align: center; 
+      padding: 20px; 
+      font-size: 0.9em; 
+      color: rgba(255,255,255,0.6);
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>SISAH Barco</h1>
-            <p>Control y monitoreo en tiempo real</p>
-        </header>
+  <div class="container">
+    <header><h1>SISAH Barco</h1></header>
+    <div class="status disconnected" id="status">Desconectado</div>
 
-        <div class="status disconnected" id="status">Desconectado</div>
-
-        <div class="section">
-            <h2>Datos del Barco</h2>
-            <div class="data-grid">
-                <div class="data-item" id="cnt">0 <div class="data-label">Mensajes</div></div>
-                <div class="data-item" id="uptime">0 s <div class="data-label">Tiempo Activo</div></div>
-                <div class="data-item" id="battery">-- <div class="data-label">Batería</div></div>
-                <div class="data-item" id="signal">-- <div class="data-label">Señal</div></div>
-            </div>
-            <p style="text-align: center; opacity: 0.8;" id="last-update">Última actualización: --</p>
-        </div>
-
-        <div class="section">
-            <h2>Comando Manual</h2>
-            <div class="input-group">
-                <input type="text" id="cmd-input" placeholder="Ej: M1:150,M2:150">
-                <button onclick="sendRaw()">Enviar</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Control de Motores</h2>
-            <div class="motor-grid">
-                <button class="motor-btn" onclick="sendMotor(180, 180)">Adelante</button>
-                <button class="motor-btn" onclick="sendMotor(-180, 180)">Izquierda</button>
-                <button class="motor-btn" onclick="sendMotor(180, -180)">Derecha</button>
-                <button class="motor-btn" onclick="sendMotor(-180, -180)">Atrás</button>
-                <button class="motor-btn stop" onclick="sendMotor(0, 0)">PARAR</button>
-                <button class="motor-btn" onclick="sendMotor(0,0,1,0)">Levantar</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Log</h2>
-            <div class="log" id="log"></div>
-        </div>
+    <!-- SENSORES -->
+    <div class="section">
+      <h2>Sensores Ultrasónicos</h2>
+      <div class="grid">
+        <div class="item">Frente: <span id="dF">--</span> cm</div>
+        <div class="item">Izquierda: <span id="dI">--</span> cm</div>
+        <div class="item">Derecha: <span id="dD">--</span> cm</div>
+      </div>
     </div>
 
-    <script>
-        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
-            clientId: 'web_barco_' + Math.random().toString(16).substr(2, 8)
-        });
+    <!-- SERVOS -->
+    <div class="section">
+      <h2>Servos (Subir/Bajar)</h2>
+      <button class="servo" onclick="send('SUBIR')">SUBIR AMBOS</button>
+      <button class="servo" onclick="send('BAJAR')">BAJAR AMBOS</button>
+      <div style="margin-top:12px; font-size:1.1em; text-align:center;">
+        S1: <span id="s1">30</span>° | S2: <span id="s2">30</span>°
+      </div>
+    </div>
 
-        const statusEl = document.getElementById('status');
-        const cntEl = document.getElementById('cnt');
-        const uptimeEl = document.getElementById('uptime');
-        const batteryEl = document.getElementById('battery');
-        const signalEl = document.getElementById('signal');
-        const lastUpdateEl = document.getElementById('last-update');
-        const logEl = document.getElementById('log');
+    <!-- MOTORES (DESACTIVADOS) -->
+    <div class="section offline">
+      <h2>Motores (Próximamente)</h2>
+      <button class="motor" disabled>ADELANTE</button>
+      <button class="motor" disabled>IZQUIERDA</button>
+      <button class="motor" disabled>DERECHA</button>
+      <button class="motor" disabled>ATRÁS</button>
+      <button class="motor" disabled>PARAR</button>
+    </div>
 
-        client.on('connect', () => {
-            statusEl.textContent = 'Conectado al barco';
-            statusEl.className = 'status connected';
-            client.subscribe('nrf/data');
-            client.subscribe('nrf/status');
-            log('Conectado al broker MQTT');
-        });
+    <!-- MENSAJE LIBRE -->
+    <div class="section">
+      <h2>Mensaje Libre</h2>
+      <div class="input-group">
+        <input type="text" id="msgInput" placeholder="Escribe y presiona Enter..." />
+        <button class="msg-btn" onclick="enviarMensaje()">Enviar</button>
+      </div>
+    </div>
 
-        client.on('close', () => {
-            statusEl.textContent = 'Desconectado';
-            statusEl.className = 'status disconnected';
-            log('Desconectado del broker');
-        });
+    <!-- LOG -->
+    <div class="section">
+      <h2>Log en Tiempo Real</h2>
+      <div class="log" id="log"></div>
+    </div>
 
-        client.on('message', (topic, message) => {
-            const msg = message.toString();
-            if (topic === 'nrf/data') {
-                try {
-                    const data = JSON.parse(msg);
-                    cntEl.innerHTML = `${data.cnt || 0} <div class="data-label">Mensajes</div>`;
-                    uptimeEl.innerHTML = `${data.uptime || 0} s <div class="data-label">Tiempo Activo</div>`;
-                    batteryEl.innerHTML = `${data.battery || '--'} V <div class="data-label">Batería</div>`;
-                    signalEl.innerHTML = `${data.signal || '--'}% <div class="data-label">Señal</div>`;
-                    lastUpdateEl.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
-                    log(`Datos recibidos: ${msg}`);
-                } catch (e) {
-                    log(`JSON inválido: ${msg}`);
-                }
+    <footer>© 2025 SISAH - Control Remoto por MQTT + nRF24</footer>
+  </div>
+
+  <script>
+    // === CLIENTE MQTT CON ID ÚNICO + LWT ===
+    const clientId = 'web_' + Math.random().toString(16).substr(2, 8);
+    const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+      clientId: clientId,
+      clean: true,
+      reconnectPeriod: 3000,
+      connectTimeout: 5000,
+      will: {
+        topic: 'nrf/status',
+        payload: 'Web OFFLINE',
+        qos: 1,
+        retain: true
+      }
+    });
+
+    const status = document.getElementById('status');
+    const logEl = document.getElementById('log');
+
+    client.on('connect', () => {
+      status.textContent = 'Conectado al Barco';
+      status.className = 'status connected';
+      client.subscribe(['nrf/data', 'nrf/status'], { qos: 1 });
+      log('Conectado al broker MQTT');
+      client.publish('nrf/status', 'Web ONLINE', { retain: true, qos: 1 });
+    });
+
+    client.on('reconnect', () => log('Reconectando al broker...'));
+    client.on('offline', () => {
+      status.textContent = 'Desconectado';
+      status.className = 'status disconnected';
+      log('Desconexión del broker');
+    });
+
+    client.on('error', (err) => log('Error MQTT: ' + err.message));
+
+    client.on('message', (topic, message) => {
+      const data = message.toString().trim();
+
+      if (topic === 'nrf/data') {
+        try {
+          const json = JSON.parse(data);
+          if (json.id !== 'A') return;
+
+          // Actualizar sensores
+          ['dF', 'dI', 'dD'].forEach(key => {
+            const el = document.getElementById(key);
+            if (el) {
+              const val = json[key];
+              el.textContent = (val >= 999) ? '--' : val.toFixed(1);
             }
-            if (topic === 'nrf/status') {
-                log(`Estado: ${msg}`);
-            }
-        });
+          });
 
-        function sendRaw() {
-            const input = document.getElementById('cmd-input');
-            const cmd = input.value.trim();
-            if (cmd && client.connected) {
-                client.publish('nrf/cmd', cmd);
-                input.value = '';
-                log(`Enviado: ${cmd}`);
-            }
+          // Actualizar servos
+          ['s1', 's2'].forEach(key => {
+            const el = document.getElementById(key);
+            if (el && json[key] !== undefined) el.textContent = json[key];
+          });
+
+          log(`Datos: ${data.substring(0, 60)}...`);
+        } catch (e) {
+          log('JSON inválido: ' + e.message);
         }
+      }
 
-        function sendMotor(m1, m2, l1 = 0, l2 = 0) {
-            if (!client.connected) return;
-            const cmd = `M1:${m1},M2:${m2},L1:${l1},L2:${l2}`;
-            client.publish('nrf/cmd', cmd);
-            log(`Motores: ${cmd}`);
-        }
+      if (topic === 'nrf/status') {
+        log(`Estado: ${data}`);
+      }
+    });
 
-        function log(text) {
-            const time = new Date().toLocaleTimeString();
-            logEl.innerHTML += `<div>[${time}] ${text}</div>`;
-            logEl.scrollTop = logEl.scrollHeight;
-        }
+    function send(cmd) {
+      if (!client.connected) {
+        log('No conectado al broker');
+        return;
+      }
+      client.publish('nrf/cmd', cmd, { qos: 1 });
+      log(`Enviado: ${cmd}`);
+    }
 
-        document.getElementById('cmd-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendRaw();
-        });
-    </script>
+    function enviarMensaje() {
+      const input = document.getElementById('msgInput');
+      const texto = input.value.trim();
+      if (!texto) return log('Escribe un mensaje');
+      if (!client.connected) return log('No conectado');
+      send(texto);
+      input.value = '';
+    }
+
+    // Enviar con Enter
+    document.getElementById('msgInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') enviarMensaje();
+    });
+
+    function log(text) {
+      const div = document.createElement('div');
+      const time = new Date().toLocaleTimeString();
+      div.textContent = `[${time}] ${text}`;
+      logEl.appendChild(div);
+      if (logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Estado al cargar/cerrar
+    window.addEventListener('load', () => log('Página cargada'));
+    window.addEventListener('beforeunload', () => {
+      if (client.connected) {
+        client.publish('nrf/status', 'Web OFFLINE', { retain: true, qos: 1 });
+      }
+    });
+  </script>
 </body>
 </html>
